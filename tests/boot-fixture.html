@@ -1,0 +1,17 @@
+<!doctype html><html><head><meta charset="utf-8"></head><body><content><div id="write"><p>加载器验证正文。</p></div></content><script src="../plugin/core.js"></script><script>
+window.dirname = 'C:/fixture/resources';
+window.fixtureCalls = [];
+window.File = { bundle: {filePath:'C:/fixture/demo.md'}, editor:{sourceView:{inSourceMode:false},library:{async doSwitchByNode(path){File.bundle.filePath=path;document.querySelector('#write p').textContent='切换后的文档。';}}},inBusyMode:false };
+window.fixtureOriginalSwitch = File.editor.library.doSwitchByNode;
+window.reqnode = name => {
+  fixtureCalls.push(name);
+  if(name==='node:path')return {join:(...parts)=>parts.join('/')};
+  if(name.endsWith('/core.js'))return TyporaSideCommentsCore;
+  if(name.endsWith('/storage.cjs'))return {
+    read:async path=>({data:TyporaSideCommentsCore.empty(path),token:null}),
+    hash:async text=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text))),x=>x.toString(16).padStart(2,'0')).join(''),
+    save:async()=>{throw Error('Fixture does not save.')}
+  };
+  throw Error('Unexpected module '+name);
+};
+</script><script defer src="../plugin/boot.js"></script></body></html>
