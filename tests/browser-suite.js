@@ -1,0 +1,112 @@
+'use strict';
+const frame = document.querySelector('#subject'), output = document.querySelector('#results');
+const pause = ms => new Promise(resolve => setTimeout(resolve,ms));
+const until = async predicate => { for(let i=0;i<200;i++){if(predicate())return;await pause(25);}throw Error('Timed out'); };
+document.querySelector('#run').onclick = async function () {
+  this.disabled = true; output.textContent = ''; let count = 0, w, app;
+  const errors = [];
+  const keys = ['typora-side-comments-demo-v1','typora-side-comments-language'];
+  const previous = keys.map(key => localStorage.getItem(key));
+  const ok = (value,label) => {if(!value)throw Error(label);output.textContent += `PASS ${++count}: ${label}\n`;};
+  const open = async url => {
+    if(app&&!app.destroyed)app.destroy();
+    frame.src=url;
+    await new Promise((resolve,reject)=>{frame.onload=resolve;frame.onerror=reject;});
+    w=frame.contentWindow;
+    w.addEventListener('error',e=>errors.push(e.message));
+    await until(()=>w.app?.state.data || w.__typoraSideComments?.state.data);
+    app=w.app||w.__typoraSideComments;
+  };
+  const select = quote => {
+    const map=w.TyporaSideComments.collect(w.document.querySelector('#write')),at=map.text.indexOf(quote);
+    if(at<0)throw Error('Missing quote');
+    const range=w.TyporaSideComments.makeRange(map,at,at+quote.length),selection=w.getSelection();
+    selection.removeAllRanges();selection.addRange(range);app.capture();
+  };
+  const type = body => {app.textarea.value=body;app.textarea.dispatchEvent(new w.Event('input',{bubbles:true}));};
+  const cancel = () => {app.drafts.delete(app.state.path);app.renderComposer();app.message('');};
+  const switchUI = lang => {app.languageSelect.value=lang;app.languageSelect.dispatchEvent(new w.Event('change',{bubbles:true}));};
+  try {
+    keys.forEach(key=>localStorage.removeItem(key));
+    await open('../demo.html');
+    ok(app.state.data.comments.length===2,'demo and sidebar load');
+    const initial=w.document.querySelector('#write').innerHTML;
+    const originalData=JSON.stringify(app.state.data),originalLang=w.document.documentElement.lang;
+    for(const lang of ['zh-CN','en','ja']){
+      switchUI(lang);
+      ok(app.titleText.textContent===app.t('title')&&app.panel.lang===lang&&app.contextButton.textContent===app.t('contextAdd'),'static UI and accessibility language: '+lang);
+    }
+    ok(w.document.documentElement.lang===originalLang&&JSON.stringify(app.state.data)===originalData&&w.document.querySelector('#write').innerHTML===initial,'switch leaves document and comment data unchanged');
+    await open('../demo.html');
+    ok(app.language==='ja','language selection survives reload');
+    select('本地保存'); const captured=JSON.stringify(app.selection); switchUI('en');
+    ok(JSON.stringify(app.selection)===captured,'captured editor selection survives language change');
+    await app.begin();type('草稿 / Draft / 下書き <img src=x>');
+    app.textarea.focus();app.textarea.setSelectionRange(2,7);app.textarea.scrollTop=3;
+    const draft=app.drafts.get(app.state.path),anchor=JSON.stringify(draft.anchor),epoch=app.epoch;
+    app.setLanguage('ja');
+    ok(app.drafts.get(app.state.path)===draft&&app.textarea.value===draft.body&&JSON.stringify(draft.anchor)===anchor&&app.epoch===epoch,'draft text, anchor, identity and document epoch survive switch');
+    ok(w.document.activeElement===app.textarea&&app.textarea.selectionStart===2&&app.textarea.selectionEnd===7,'focused editor caret survives switch');
+    let saves=0;const originalSave=app.io.save;app.io.save=async(...args)=>{saves++;return originalSave(...args);};
+    w.demo.wait=150;const saving=app.submit();switchUI('en');
+    ok(app.saving&&app.textarea.disabled&&[...app.composer.querySelectorAll('button')].every(b=>b.disabled)&&[...app.list.querySelectorAll('.tsc-card-actions button')].every(b=>b.disabled),'pending save remains locked after language change');
+    ok(app.notice.textContent===app.t('savingComment'),'in-flight notice uses current language');
+    await saving;
+    ok(saves===1&&app.state.data.comments.length===3&&!app.drafts.has(app.state.path),'language switch saves exactly once');
+    ok(app.notice.textContent===app.t('saved')&&w.document.querySelectorAll('.tsc-body img').length===0,'saved message localized and user HTML stays text');
+    ok(w.document.querySelector('#write').innerHTML===initial,'saving leaves document DOM unchanged');
+    await open('../demo.html');
+    ok(app.language==='en'&&app.state.data.comments.length===3,'saved comments and language restored');
+    const id=app.state.data.comments.at(-1).id;
+    await app.begin(id);type('Updated 注釈');switchUI('ja');await app.submit();
+    ok(app.state.data.comments.at(-1).body==='Updated 注釈','editing in another language saves original input');
+    await app.change(id,'resolved');app.filter='resolved';app.renderList();
+    ok(app.list.querySelectorAll('.tsc-card').length===1,'resolve and filter');
+    await app.change(id,'open');app.filter='open';app.renderList();
+    await app.remove(id);switchUI('zh-CN');
+    ok(app.pendingDeleteId===id&&app.list.querySelector('.tsc-confirm').textContent.includes(app.t('deleteQuestion')),'delete confirmation survives and translates');
+    app.list.querySelector('.tsc-confirm button:last-child').click();
+    ok(app.pendingDeleteId===null&&app.state.data.comments.length===3,'cancel delete preserves data');
+    await app.remove(id);switchUI('en');app.list.querySelector('.tsc-confirm button').click();
+    await until(()=>!app.saving&&app.state.data.comments.length===2);
+    ok(app.pendingDeleteId===null,'confirmed deletion removes only selected comment');
+    select('本地保存');await app.begin();type('Retained after failure');w.demo.fail=true;await app.submit();
+    switchUI('ja');
+    ok(app.notice.textContent===app.t('DEMO_SAVE_FAILED')&&app.textarea.value==='Retained after failure','write failure retranslates and keeps draft');
+    w.demo.fail=false;await app.submit();cancel();
+    select('本地保存');await app.begin();type('Conflicting draft');w.demo.records.get(app.state.path).token='external-change';await app.submit();switchUI('zh-CN');
+    ok(app.notice.textContent===app.t('CONFLICT')&&app.textarea.value==='Conflicting draft','conflict translates and keeps draft');cancel();await app.load(true);
+    const read=app.io.read;app.io.read=async()=>{throw w.TyporaSideCommentsI18n.failure('CORRUPT');};await app.load(true);switchUI('ja');
+    ok(app.notice.textContent===app.t('CORRUPT')&&app.addButton.disabled,'corrupt storage renders translated error and blocks new comments');app.io.read=read;await app.load(true);
+    w.demo.source=true;await app.poll();switchUI('en');
+    ok(app.addButton.disabled&&app.notice.textContent===app.t('sourceMode'),'source mode stays disabled and translated');w.demo.source=false;await app.poll();
+    const heads=w.document.querySelectorAll('#write h2'),range=w.document.createRange();range.setStart(heads[0].firstChild,0);range.setEnd(heads[1].firstChild,2);w.getSelection().removeAllRanges();w.getSelection().addRange(range);app.capture();await app.begin();switchUI('ja');
+    ok(app.notice.textContent===app.t('SAME_BLOCK'),'invalid selection notice translates');
+    select('本地保存');await app.begin();type('Stale anchor');w.document.querySelector('#write h1').append(' change');await app.submit();
+    ok(app.notice.textContent===app.t('DRAFT_TEXT_CHANGED')&&app.textarea.value==='Stale anchor','changed document refuses stale draft');cancel();
+    w.document.querySelector('#write strong').textContent='変更された文';await app.refresh();
+    ok(app.locations.get(app.state.data.comments[0].id).status==='detached','changed original is detached');
+    select('変更された文');await app.begin(app.state.data.comments[0].id,true);switchUI('en');await app.submit();
+    ok(app.state.data.comments[0].anchor.quote==='変更された文','reattach draft survives language change');
+    await app.navigate(app.state.data.comments[0].id);
+    ok(w.CSS.highlights.has('tsc-focus')&&app.notice.textContent===app.t('located'),'navigation highlights original and translates notice');
+    select('本地保存');await app.begin();type('A to B to A');w.demo.wait=150;const pending=app.submit();const originalPath=w.demo.path;w.demo.path='another.md';await app.load();switchUI('ja');w.demo.path=originalPath;await app.load();await pending;
+    ok(app.state.data.comments.some(c=>c.body==='A to B to A')&&!app.drafts.has(originalPath),'document switching during save keeps correct data');
+    for(const lang of ['zh-CN','en','ja']){
+      switchUI(lang);
+      ok(app.list.querySelector('time').textContent===w.TyporaSideCommentsI18n.date(lang,app.state.data.comments[0].createdAt),'date uses selected locale: '+lang);
+      frame.style.width='360px';await pause(50);
+      const nodes=[app.panel,...app.panel.querySelectorAll('button,select,.tsc-card,.tsc-toolbar,.tsc-filters')];
+      ok(nodes.every(node=>{const r=node.getBoundingClientRect();return r.left>=-1&&r.right<=w.innerWidth+1;}),'controls fit 360px viewport: '+lang);
+    }
+    frame.style.width='1100px';await open('boot-fixture.html');
+    ok(w.fixtureCalls.includes('C:/fixture/resources/typora-side-comments/storage.cjs')&&!!w.TyporaSideCommentsI18n,'loader initializes language resources before UI');
+    ok(app.language==='ja','loader honors saved language');
+    await w.File.editor.library.doSwitchByNode('C:/fixture/other.md');await until(()=>app.state.path==='C:/fixture/other.md'&&!app.state.loading);
+    ok(!app.transition,'loader follows document switching');app.destroy();
+    ok(!w.document.querySelector('.tsc-panel')&&w.File.editor.library.doSwitchByNode===w.fixtureOriginalSwitch,'teardown restores host hook');
+    ok(errors.length===0,'no uncaught browser errors');
+    output.textContent+=`\nBROWSER CHECKS: ${count} passed\n`;
+  }catch(error){output.textContent+='\nFAIL: '+error.stack+'\n';}
+  finally{if(app&&!app.destroyed)app.destroy();keys.forEach((key,i)=>previous[i]===null?localStorage.removeItem(key):localStorage.setItem(key,previous[i]));this.disabled=false;}
+};

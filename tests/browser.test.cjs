@@ -18,6 +18,7 @@ function ok(value, label) { assert.ok(value, label); checks++; console.log('PASS
   const select = async quote => page.evaluate(quote => { const map=TyporaSideComments.collect(document.querySelector('#write')); const at=map.text.indexOf(quote); if(at<0)throw Error('missing '+quote); const range=TyporaSideComments.makeRange(map,at,at+quote.length); const s=getSelection();s.removeAllRanges();s.addRange(range);app.capture();},quote);
   try {
     await page.goto(base+'/demo.html'); await page.waitForFunction(()=>window.app?.state.data?.comments.length===2);
+    await page.evaluate(()=>app.setLanguage('zh-CN'));
     ok(await page.locator('.tsc-card').count()===2,'seed comments and sidebar load');
     const initial=await page.locator('#write').innerHTML();
     await page.screenshot({path:path.join(root,'preview.png'),fullPage:true});

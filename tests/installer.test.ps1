@@ -24,7 +24,7 @@ try {
     & (Join-Path $package 'Install.ps1') -TyporaDirectory $tempRoot -Confirm:$false
     $installed = [IO.File]::ReadAllText($window)
     Check ($installed.Contains('typora-side-comments/boot.js')) 'loader injected'
-    Check ((Get-ChildItem -LiteralPath (Join-Path $tempRoot 'resources\typora-side-comments') -File -Force).Count -eq 6) 'five files and ownership marker installed'
+    Check ((Get-ChildItem -LiteralPath (Join-Path $tempRoot 'resources\typora-side-comments') -File -Force).Count -eq 7) 'six files and ownership marker installed'
     Check ((Get-ChildItem -LiteralPath (Join-Path $tempRoot 'resources') -Filter '*.bak').Count -gt 0) 'window backup created'
     Start-Sleep -Milliseconds 20
     & (Join-Path $package 'Install.ps1') -TyporaDirectory $tempRoot -Confirm:$false
