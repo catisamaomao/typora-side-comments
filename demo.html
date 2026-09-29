@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Typora 侧边批注 · 交互演示</title>
+<link rel="stylesheet" href="plugin/style.css"><style>
+*{box-sizing:border-box}body{margin:0;background:#fdfcf8;color:#273c3b;font-family:"Microsoft YaHei",sans-serif}header{height:32px;background:#edf0e9;padding:7px 22px;font:11px "Segoe UI",sans-serif;letter-spacing:.1em;color:#64736d}content{position:absolute;left:200px;right:0;top:32px;bottom:0;overflow:auto}nav{position:fixed;top:32px;bottom:0;left:0;width:200px;background:#f4f4ed;border-right:1px solid #e2e7dd;padding:44px 23px;font-size:12px;color:#738078}nav b{display:block;color:#344e43;letter-spacing:.13em;font-size:10px;margin-bottom:23px}nav a{display:block;margin:17px 0;color:inherit;text-decoration:none}nav a:first-of-type{color:#2d705c;font-weight:600}#write{max-width:780px;margin:auto;padding:64px 65px 120px;outline:0;font-size:15px;line-height:1.95}h1{font-size:37px;line-height:1.45;letter-spacing:-.02em;margin:12px 0 17px;font-weight:650}h2{font-size:21px;line-height:1.5;margin:37px 0 14px}p{margin:18px 0}strong{color:#2a6453}.eyebrow{font-size:10px;color:#7c877f;letter-spacing:.18em}.sub{color:#849087;font-size:12px;border-bottom:1px solid #e0e6db;padding-bottom:27px}.demo-note{font-size:12px;background:#edf2e9;border-left:3px solid #8ba68c;padding:12px 16px;color:#5f7667}blockquote{border-left:3px solid #cfdbca;margin:22px 0;padding:0 18px;color:#718071}li{margin:10px 0}.md-meta{display:none}@media(max-width:1000px){nav{display:none}content{left:0}#write{padding:65px 35px}}@media(prefers-color-scheme:dark){body{background:#1e2525;color:#dce6df}header,nav{background:#26312c;color:#a1b2a6;border-color:#3c4b41}strong{color:#90cfb1}.demo-note{background:#2c3f33;color:#b1cbb6}}
+</style></head><body><header>TYPO​RA / SIDE COMMENTS — INTERACTIVE PREVIEW</header><nav><b>文档大纲</b><a href="#intro">批注，让反馈留在现场</a><a href="#workflow">01 &nbsp; 从一段文字开始</a><a href="#safe">02 &nbsp; 修改与定位</a><a href="#local">03 &nbsp; 本地保存</a></nav><content><article id="write" contenteditable="true" spellcheck="false"><div class="eyebrow" contenteditable="false">DRAFT REVIEW · 01</div><h1 id="intro">批注，让反馈<br>留在现场。</h1><div class="sub" contenteditable="false">Typora 侧边批注 / 交互演示 / 版本 1.0.0</div><p class="demo-note" contenteditable="false">这是使用同一套批注界面的演示页面。你可以选择正文、添加批注，也可以直接修改示例文字。演示批注保存在此浏览器中。</p><h2 id="workflow">01 &nbsp; 从一段文字开始</h2><p>好的反馈，应该贴近它所讨论的文字。选中一段正文，添加批注，就能把问题、建议和待办留在文稿右侧。</p><p>我们希望保留<span class="md-pair-s"><span class="md-meta md-before">**</span><strong>安静的写作空间</strong><span class="md-meta md-after">**</span></span>，同时让每一条意见都有明确的落点。完成讨论后，把批注标记为已解决，随时可以重新打开。</p><h2 id="safe">02 &nbsp; 修改与定位</h2><p>点击批注中的原文引用，可以回到对应位置。正文改动较大时，插件会提示重新关联，由你选择新的位置。</p><blockquote><p>准确比猜测更重要。找不到原文时，保留批注和原文引用，等待你重新关联。</p></blockquote><h2 id="local">03 &nbsp; 本地保存</h2><p>安装版将批注保存在 Markdown 旁边的配套文件中。分享、移动或备份文稿时，请把配套文件一同带上。</p><ul><li>选中正文：Ctrl + Alt + M 添加批注。</li><li>保存批注：编辑框内 Ctrl + Enter。</li><li>显示侧栏：Ctrl + Alt + Shift + M。</li></ul></article></content>
+<script src="plugin/core.js"></script><script src="plugin/ui.js"></script><script>
+(async function () {
+  const Core = TyporaSideCommentsCore;
+  const hash = async text => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))), b => b.toString(16).padStart(2, '0')).join('');
+  const key = 'typora-side-comments-demo-v1';
+  window.demo = { path: '侧边批注使用示例.md', source: false, wait: 0, fail: false, records: new Map(), event: null };
+  const io = {
+    hash,
+    async read(path) {
+      if (demo.records.has(path)) return structuredClone(demo.records.get(path));
+      const saved = path === '侧边批注使用示例.md' ? localStorage.getItem(key) : null;
+      const data = saved ? JSON.parse(saved) : Core.empty(path);
+      if (!saved && path === '侧边批注使用示例.md') {
+        const text = TyporaSideComments.collect(document.querySelector('#write')).text;
+        for (const [quote, body] of [['安静的写作空间','这句话可以作为设计原则。侧栏保持克制，让正文始终是主角。'],['准确比猜测更重要。','遇到原文被改写或位置不明确时，请提示我重新关联。']]) {
+          const at = text.indexOf(quote), now = new Date().toISOString();
+          data.comments.push({ id: crypto.randomUUID(), body, status: 'open', createdAt: now, updatedAt: now, anchor: Core.createAnchor(text, at, at + quote.length, await hash(text)) });
+        }
+      }
+      const value = {data, token: saved ? await hash(saved) : null}; demo.records.set(path, structuredClone(value)); return value;
+    },
+    async save(path, data, expected) {
+      if (demo.wait) await new Promise(resolve => setTimeout(resolve, demo.wait));
+      if (demo.fail) throw new Error('模拟写入失败：批注未保存，输入仍然保留。');
+      const current = demo.records.get(path);
+      if (current && current.token !== expected) throw new Error('批注已被另一个窗口修改，请重新加载。');
+      const next = { ...structuredClone(data), revision: crypto.randomUUID() }; const raw = JSON.stringify(next); const result = { data: next, token: await hash(raw) };
+      demo.records.set(path, structuredClone(result)); if (path === '侧边批注使用示例.md') localStorage.setItem(key, raw); return result;
+    }
+  };
+  window.app = new TyporaSideComments.SideComments(io, {getPath:()=>demo.path, getRoot:()=>document.querySelector('#write'), isSource:()=>demo.source, subscribe:fn=>{demo.event=fn;return()=>{demo.event=null}}});
+  await app.start();
+})();
+</script></body></html>

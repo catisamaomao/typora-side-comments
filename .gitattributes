@@ -1,0 +1,3 @@
+# Keep installer-verified plugin bytes unchanged across checkouts.
+plugin/* -text
+*.png binary

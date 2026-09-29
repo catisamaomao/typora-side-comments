@@ -1,0 +1,10 @@
+# Local review data and temporary files
+*.comments.json
+*.comments.json.*
+*.bak
+*.log
+*.tmp
+node_modules/
+.DS_Store
+Thumbs.db
+installer-fixture-*/
