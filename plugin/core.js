@@ -7,7 +7,7 @@
   const FORMAT = 'typora-side-comments';
   const MAX_COMMENT = 12000;
   const CONTEXT = 64;
-  function assert(ok, message) { if (!ok) throw new Error(message); }
+  function assert(ok, code) { if (!ok) throw Object.assign(new Error(code), { code }); }
   function contextMatches(anchor, text) {
     const matches = [];
     for (let at = text.indexOf(anchor.quote); at !== -1; at = text.indexOf(anchor.quote, at + 1)) {
@@ -20,9 +20,9 @@
     return matches;
   }
   function createAnchor(text, start, end, digest) {
-    assert(Number.isInteger(start) && Number.isInteger(end) && start >= 0 && end <= text.length && end > start, '无效的正文选区。');
+    assert(Number.isInteger(start) && Number.isInteger(end) && start >= 0 && end <= text.length && end > start, 'INVALID_SELECTION');
     const quote = text.slice(start, end);
-    assert(quote.trim() && quote.length <= 4000, '请选择 1 至 4000 个字符的正文。');
+    assert(quote.trim() && quote.length <= 4000, 'SELECTION_LENGTH');
     const anchor = { quote, prefix: text.slice(Math.max(0, start - CONTEXT), start), suffix: text.slice(end, end + CONTEXT), start, end, digest };
     anchor.contextUnique = contextMatches(anchor, text).length === 1;
     return anchor;
@@ -38,21 +38,21 @@
     return candidates.length === 1 ? { status: 'attached', ...candidates[0] } : { status: 'detached' };
   }
   function validate(data) {
-    assert(data && data.format === FORMAT && data.version === 1, '批注文件格式不兼容；原文件未修改。');
-    assert(typeof data.revision === 'string' && data.revision.length <= 100, '批注文件缺少版本信息。');
-    assert(Array.isArray(data.comments) && data.comments.length <= 5000, '批注数量超出限制或数据损坏。');
+    assert(data && data.format === FORMAT && data.version === 1, 'INVALID_FORMAT');
+    assert(typeof data.revision === 'string' && data.revision.length <= 100, 'INVALID_REVISION');
+    assert(Array.isArray(data.comments) && data.comments.length <= 5000, 'INVALID_COUNT');
     const ids = new Set();
     for (const c of data.comments) {
-      assert(c && typeof c.id === 'string' && /^[a-zA-Z0-9-]{8,80}$/.test(c.id) && !ids.has(c.id), '批注编号重复或无效。'); ids.add(c.id);
-      assert(typeof c.body === 'string' && c.body.trim() && c.body.length <= MAX_COMMENT, '批注内容无效。');
-      assert(c.status === 'open' || c.status === 'resolved', '批注状态无效。');
-      assert(typeof c.createdAt === 'string' && Number.isFinite(Date.parse(c.createdAt)) && typeof c.updatedAt === 'string' && Number.isFinite(Date.parse(c.updatedAt)), '批注时间无效。');
+      assert(c && typeof c.id === 'string' && /^[a-zA-Z0-9-]{8,80}$/.test(c.id) && !ids.has(c.id), 'INVALID_ID'); ids.add(c.id);
+      assert(typeof c.body === 'string' && c.body.trim() && c.body.length <= MAX_COMMENT, 'INVALID_BODY');
+      assert(c.status === 'open' || c.status === 'resolved', 'INVALID_STATUS');
+      assert(typeof c.createdAt === 'string' && Number.isFinite(Date.parse(c.createdAt)) && typeof c.updatedAt === 'string' && Number.isFinite(Date.parse(c.updatedAt)), 'INVALID_TIME');
       const a = c.anchor;
-      assert(a && typeof a.quote === 'string' && a.quote.trim() && a.quote.length <= 4000, '批注原文无效。');
-      assert(typeof a.prefix === 'string' && a.prefix.length <= CONTEXT && typeof a.suffix === 'string' && a.suffix.length <= CONTEXT, '批注上下文无效。');
-      assert(Number.isInteger(a.start) && a.start >= 0 && Number.isInteger(a.end) && a.end - a.start === a.quote.length, '批注范围无效。');
-      assert(typeof a.digest === 'string' && /^[a-f0-9]{64}$/.test(a.digest), '批注指纹无效。');
-      assert(typeof a.contextUnique === 'boolean', '批注上下文唯一性信息无效。');
+      assert(a && typeof a.quote === 'string' && a.quote.trim() && a.quote.length <= 4000, 'INVALID_QUOTE');
+      assert(typeof a.prefix === 'string' && a.prefix.length <= CONTEXT && typeof a.suffix === 'string' && a.suffix.length <= CONTEXT, 'INVALID_CONTEXT');
+      assert(Number.isInteger(a.start) && a.start >= 0 && Number.isInteger(a.end) && a.end - a.start === a.quote.length, 'INVALID_RANGE');
+      assert(typeof a.digest === 'string' && /^[a-f0-9]{64}$/.test(a.digest), 'INVALID_DIGEST');
+      assert(typeof a.contextUnique === 'boolean', 'INVALID_UNIQUENESS');
     }
     return data;
   }
