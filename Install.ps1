@@ -45,7 +45,7 @@ $hadPlugin = Test-Path -LiteralPath $pluginTarget
 if ($hadPlugin) { Copy-Item -LiteralPath $pluginTarget -Destination $oldPluginBackup -Recurse }
 try {
     New-Item -ItemType Directory -Path $pluginTarget -Force | Out-Null
-    [IO.File]::WriteAllText((Join-Path $pluginTarget '.typora-side-comments-owned'), '1.1.0', $utf8)
+    [IO.File]::WriteAllText((Join-Path $pluginTarget '.typora-side-comments-owned'), '1.1.1', $utf8)
     foreach ($name in @('boot.js','i18n.js','core.js','storage.cjs','ui.js','style.css')) { Copy-Item -LiteralPath (Join-Path $pluginSource $name) -Destination (Join-Path $pluginTarget $name) -Force }
     [IO.File]::WriteAllText($windowTemporary, $updated, $utf8)
     [IO.File]::Replace($windowTemporary, $windowFile, $windowBackup)

@@ -1,4 +1,4 @@
-# Typora Side Comments 1.1.0
+# Typora Side Comments 1.1.1
 
 [简体中文](README.md) | English | [日本語](README.ja.md)
 
@@ -16,7 +16,7 @@ Use **界面语言 / Interface language / 表示言語** at the top of the sideb
 
 Switching translates controls, notices, errors and date formatting while preserving the current draft, quote and save state. Document text, filenames and user comments are never translated. Installer console messages remain in English.
 
-To upgrade from 1.0.0, save your work, close Typora and run the new installer. The comment file format is unchanged. **1.1.0 has not yet been installed and verified inside Typora**; the actual-application observations below are from 1.0.0.
+To upgrade from 1.0.0, save your work, close Typora and run the new installer. The comment file format is unchanged. **1.1.1 has not yet been installed and verified inside Typora**; the actual-application observations below are from 1.0.0.
 
 ## Installation
 
@@ -77,9 +77,11 @@ Comments are written to local files without network uploads or changes to the Ma
 
 ## When the original text changes
 
-For an unchanged document, comments use their original positions. After the document changes, the plugin requires a unique, trustworthy match for the quoted text and its full stored context. If the context was already duplicated when the comment was created, subsequent document changes require manual reattachment. This avoids attaching a comment to another occurrence after one is deleted.
+**1.1.1 fixes lost links when text before an unchanged quote is edited and its offset shifts.** An unchanged document uses the original offset. After edits, the plugin first matches the quote and its full context. If the context also changed, a quote that occurred exactly once when the comment was created and still occurs exactly once can relocate automatically. Adding a heading, deleting paragraphs or editing nearby preceding text no longer detaches such a quote merely because its position moved. Relocation does not rewrite document text or comment bodies.
 
-This is conservative text matching, not a native editor range that follows every edit. Editing the annotated text or its nearby context, or changing paragraph structure, may mark a comment **Needs reattachment**. The comment itself is retained. Text matching cannot guarantee identity for all complex repetitions, moves, or rewrites. When unsure, check the quote and reattach manually.
+Originally repeated quotes still require full context. A duplicate becoming the sole remaining occurrence after deletion does not prove its identity. Deleted, rewritten or ambiguous quotes retain their comments and show **Needs reattachment**. The plugin does not select the nearest occurrence. Complex repetition, copying, moves and rewrites may still require manual review; text matching cannot guarantee identity after every possible edit.
+
+**Legacy comments:** 1.0.0/1.1.0 sidecars remain readable. The plugin calculates missing quote-uniqueness evidence only when the document fingerprint matches the original recorded document. Open any comment for editing and save it once, without changing its body, to persist evidence already verified in that file. Viewing alone does not rewrite the sidecar. If the document changed before upgrading and the full context no longer matches, the old sidecar lacks sufficient evidence: reattach that comment once. Current uniqueness is never treated as proof of original uniqueness.
 
 ## Recovery and uninstallation
 
@@ -103,8 +105,8 @@ Open `demo.html` in Chrome or Edge to try the same sidebar. Demo comments are st
 
 Recorded automated checks (results in simulated environments are distinct from testing inside Typora):
 
-- **1.1.0: 21 Node tests** (14 data/anchor tests and 7 language tests): translation coverage, locale matching, blocked storage, error mapping, date formatting and existing data checks.
-- **1.1.0: 41 browser checks:** three-language labels, preference persistence, drafts and caret, switching during saving, error retranslation, deletion confirmation, document switching, anchors, dates, a 360px viewport and simulated-host loading. A native language-menu interaction also confirmed retention of the selected quote.
+- **1.1.1: 33 Node tests** (14 data/anchor, 7 language and 12 relocation tests): translation coverage, locale matching, blocked storage, error mapping, date formatting and existing data checks.
+- **1.1.1: 50 browser checks:** offset shifts, nearby prefix edits, reopened anchors, legacy metadata, three-language labels, preference persistence, drafts and caret, switching during saving, error retranslation, deletion confirmation, document switching, anchors, dates, a 360px viewport and simulated-host loading. A native language-menu interaction also confirmed retention of the selected quote.
 - **1.0.0 historical record: 28 Chromium browser checks:** adding, reloading, editing, resolving, locating, reattaching, deleting, rendering HTML as text, retaining drafts on failure, switching documents during a save, A→B→A transitions, special selections, source mode, narrow windows, dark mode, printing, and loading/switching/teardown in a simulated host.
 - **15 installer/uninstaller checks** in isolated mock installation directories: dry run, repeated installation, preserving user modifications, cleanup after first-install failure, and rollback after failed upgrades. These ran with Windows PowerShell 5.1 and do not operate on the actual Typora installation.
 - **Verified in the actual application on 2026-09-24 (Windows Typora 1.14.10):** installation, sidebar display, and opening the comment editor with the button after selecting text, with the correct quote displayed. Saving, restoration after reopening, navigation, and shortcuts remain unverified in Typora. Other versions are unverified. Collaborative editing, reply threads, Word comment import/export, and including comments in PDF/Word exports are not provided.
@@ -112,7 +114,7 @@ Recorded automated checks (results in simulated environments are distinct from t
 Development checks require **Node.js 22 or later**, Windows PowerShell 5.1, and an installed Chrome browser. No npm packages are required.
 
 ```powershell
-node --test tests/core-storage.test.cjs tests/i18n.test.cjs
+node --test tests/core-storage.test.cjs tests/i18n.test.cjs tests/anchor-relocation.test.cjs
 node tests/browser.test.cjs
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\installer.test.ps1
 ```
