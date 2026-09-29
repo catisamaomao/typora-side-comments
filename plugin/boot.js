@@ -46,7 +46,7 @@
       };
       window.__typoraSideComments = new window.TyporaSideComments.SideComments(storage, env);
       await window.__typoraSideComments.start();
-      console.info('[Typora Side Comments] 1.1.0 loaded');
+      console.info('[Typora Side Comments] 1.1.1 loaded');
     } catch (error) { fail(error); }
   }
   function fail(error) {

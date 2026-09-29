@@ -185,7 +185,10 @@
       const map = collect(this.env.getRoot()); const digest = await this.io.hash(map.text);
       if (this.destroyed || version !== this.refreshVersion || epoch !== this.epoch || this.state.path !== this.env.getPath()) return;
       this.map = map; this.digest = digest; this.locations.clear();
-      for (const comment of this.state.data?.comments || []) this.locations.set(comment.id, Core.locate(comment.anchor, map.text, digest));
+      for (const comment of this.state.data?.comments || []) {
+        comment.anchor = Core.upgradeAnchor(comment.anchor, map.text, digest);
+        this.locations.set(comment.id, Core.locate(comment.anchor, map.text, digest));
+      }
       this.highlight(); this.renderList();
     }
     highlight() {

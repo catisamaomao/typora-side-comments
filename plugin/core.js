@@ -8,16 +8,26 @@
   const MAX_COMMENT = 12000;
   const CONTEXT = 64;
   function assert(ok, code) { if (!ok) throw Object.assign(new Error(code), { code }); }
-  function contextMatches(anchor, text) {
+  function matchingQuotes(anchor, text, accept) {
     const matches = [];
     for (let at = text.indexOf(anchor.quote); at !== -1; at = text.indexOf(anchor.quote, at + 1)) {
       const end = at + anchor.quote.length;
       const before = anchor.prefix ? text.slice(Math.max(0, at - anchor.prefix.length), at) === anchor.prefix : at === 0;
       const after = anchor.suffix ? text.slice(end, end + anchor.suffix.length) === anchor.suffix : end === text.length;
-      if (before && after) matches.push({ start: at, end });
+      if (accept(before, after)) matches.push({ start: at, end });
       if (matches.length > 1) break;
     }
     return matches;
+  }
+  function contextMatches(anchor, text) { return matchingQuotes(anchor, text, (before, after) => before && after); }
+  function withEvidence(anchor, text) {
+    return { ...anchor, quoteUnique: matchingQuotes(anchor, text, () => true).length === 1 };
+  }
+  function upgradeAnchor(anchor, text, digest) {
+    // Legacy sidecars do not prove whether the quote was unique.
+    // Enrich them only when we can verify their original document, never from a survivor.
+    if (typeof anchor.quoteUnique === 'boolean') return anchor;
+    return anchor.digest === digest && text.slice(anchor.start, anchor.end) === anchor.quote ? withEvidence(anchor, text) : anchor;
   }
   function createAnchor(text, start, end, digest) {
     assert(Number.isInteger(start) && Number.isInteger(end) && start >= 0 && end <= text.length && end > start, 'INVALID_SELECTION');
@@ -25,7 +35,7 @@
     assert(quote.trim() && quote.length <= 4000, 'SELECTION_LENGTH');
     const anchor = { quote, prefix: text.slice(Math.max(0, start - CONTEXT), start), suffix: text.slice(end, end + CONTEXT), start, end, digest };
     anchor.contextUnique = contextMatches(anchor, text).length === 1;
-    return anchor;
+    return withEvidence(anchor, text);
   }
   function locate(anchor, text, digest) {
     if (anchor.digest === digest && text.slice(anchor.start, anchor.end) === anchor.quote) {
@@ -35,7 +45,16 @@
     if (!anchor.contextUnique) return { status: 'ambiguous' };
     const candidates = contextMatches(anchor, text);
     if (candidates.length > 1) return { status: 'ambiguous' };
-    return candidates.length === 1 ? { status: 'attached', ...candidates[0] } : { status: 'detached' };
+    if (candidates.length === 1) return { status: 'attached', ...candidates[0] };
+    // A duplicate becoming unique after deletion is not proof of identity.
+    // Even an originally unique single side can transfer to another occurrence
+    // when the selected quote is deleted, so never use one-sided fallback.
+    if (anchor.quoteUnique === true) {
+      const quotes = matchingQuotes(anchor, text, () => true);
+      if (quotes.length > 1) return { status: 'ambiguous' };
+      if (quotes.length === 1) return { status: 'attached', ...quotes[0] };
+    }
+    return { status: 'detached' };
   }
   function validate(data) {
     assert(data && data.format === FORMAT && data.version === 1, 'INVALID_FORMAT');
@@ -53,9 +72,10 @@
       assert(Number.isInteger(a.start) && a.start >= 0 && Number.isInteger(a.end) && a.end - a.start === a.quote.length, 'INVALID_RANGE');
       assert(typeof a.digest === 'string' && /^[a-f0-9]{64}$/.test(a.digest), 'INVALID_DIGEST');
       assert(typeof a.contextUnique === 'boolean', 'INVALID_UNIQUENESS');
+      assert(a.quoteUnique === undefined || typeof a.quoteUnique === 'boolean', 'INVALID_UNIQUENESS');
     }
     return data;
   }
   function empty(name) { return { format: FORMAT, version: 1, revision: '', document: { name }, comments: [] }; }
-  return { FORMAT, MAX_COMMENT, CONTEXT, createAnchor, locate, validate, empty };
+  return { FORMAT, MAX_COMMENT, CONTEXT, createAnchor, upgradeAnchor, locate, validate, empty };
 });
