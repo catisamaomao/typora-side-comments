@@ -1,0 +1,49 @@
+:root { --tsc-width: 350px; --tsc-bg: #fbfaf7; --tsc-card: #fff; --tsc-fg: #263c3c; --tsc-muted: #737e79; --tsc-line: #e4e7de; --tsc-accent: #296b5d; --tsc-soft: #eaf2ed; --tsc-danger: #a43a31; }
+body.tsc-open content { right: var(--tsc-width) !important; }
+.tsc-panel, .tsc-panel *, .tsc-launcher, .tsc-context { box-sizing: border-box; }
+.tsc-panel { position: fixed; z-index: 1050; right: 0; top: 32px; bottom: 0; width: var(--tsc-width); display: flex; flex-direction: column; background: var(--tsc-bg); border-left: 1px solid var(--tsc-line); color: var(--tsc-fg); font: 13px/1.55 "Segoe UI", "Microsoft YaHei", sans-serif; text-align: left; }
+.tsc-panel[hidden], .tsc-composer[hidden], .tsc-notice[hidden], .tsc-context[hidden] { display: none !important; }
+.tsc-panel button, .tsc-context, .tsc-launcher { font: inherit; cursor: pointer; border: 1px solid transparent; border-radius: 6px; background: transparent; color: inherit; padding: 5px 8px; margin: 0; line-height: 1.45; }
+.tsc-panel button:hover { background: var(--tsc-soft); }
+.tsc-panel button:focus-visible, .tsc-launcher:focus-visible, .tsc-context:focus-visible { outline: 2px solid var(--tsc-accent); outline-offset: 2px; }
+.tsc-panel button:disabled { opacity: .45; cursor: default; }
+.tsc-top { display: flex; align-items: center; justify-content: space-between; padding: 17px 18px 5px; }
+.tsc-title { font-size: 17px; font-weight: 650; letter-spacing: .02em; }
+.tsc-count { display: inline-flex; margin-left: 8px; border-radius: 20px; background: var(--tsc-soft); color: var(--tsc-accent); padding: 0 7px; font-size: 11px; vertical-align: middle; }
+.tsc-icon { font-size: 24px !important; line-height: 1 !important; }
+.tsc-file { color: var(--tsc-muted); padding: 0 18px 14px; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tsc-toolbar { display: flex; justify-content: space-between; padding: 0 18px 15px; gap: 8px; }
+.tsc-panel .tsc-primary { background: var(--tsc-accent); color: #fff; padding: 7px 12px; }
+.tsc-panel .tsc-primary:hover { filter: brightness(1.1); background: var(--tsc-accent); }
+.tsc-panel .tsc-link { color: var(--tsc-muted); }
+.tsc-filters { display: flex; gap: 3px; padding: 0 14px 10px; border-bottom: 1px solid var(--tsc-line); }
+.tsc-filters button { font-size: 12px; padding: 5px 9px; color: var(--tsc-muted); }
+.tsc-filters .tsc-selected { background: var(--tsc-soft); color: var(--tsc-accent); font-weight: 600; }
+.tsc-notice { margin: 10px 14px 0; border-radius: 5px; padding: 8px 10px; background: var(--tsc-soft); color: var(--tsc-accent); font-size: 12px; overflow-wrap: anywhere; }
+.tsc-notice.tsc-error { background: #fff0dc; color: #84500c; }
+.tsc-list { overflow-y: auto; min-height: 40px; flex: 1; padding: 14px; }
+.tsc-card { background: var(--tsc-card); padding: 13px 13px 10px; border: 1px solid var(--tsc-line); border-radius: 9px; margin-bottom: 12px; box-shadow: 0 2px 5px #19392a04; }
+.tsc-meta { display: flex; justify-content: space-between; align-items: center; color: var(--tsc-muted); font-size: 10px; margin-bottom: 9px; }
+.tsc-badge { color: var(--tsc-accent); font-weight: 600; }
+.tsc-panel .tsc-quote { display: block; width: 100%; text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 90px; overflow-y: auto; border: 0; border-left: 3px solid #deb76b; border-radius: 0; background: #faf6ed; color: #756342; font-size: 12px; padding: 7px 9px; margin: 0 0 10px; }
+.tsc-body { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.75; padding: 1px 0 10px; }
+.tsc-card-actions { display: flex; gap: 1px; border-top: 1px solid var(--tsc-line); padding-top: 6px; }
+.tsc-card-actions button { color: var(--tsc-muted); font-size: 11px; padding: 4px 6px; }
+.tsc-panel .tsc-danger { color: var(--tsc-danger); }
+.tsc-detached { color: #8b651e; font-size: 11px; margin-top: 6px; }
+.tsc-resolved { opacity: .76; }
+.tsc-empty { white-space: pre-line; text-align: center; color: var(--tsc-muted); padding: 55px 12px; line-height: 2; }
+.tsc-composer { margin: 12px 14px 0; padding: 13px; border: 1px solid #abc8b8; border-radius: 8px; background: var(--tsc-card); max-height: 55%; overflow-y: auto; flex-shrink: 0; }
+.tsc-composer-title { font-weight: 650; margin-bottom: 10px; }
+.tsc-textarea { width: 100%; height: 105px; min-height: 70px; resize: vertical; padding: 9px; background: var(--tsc-card); color: var(--tsc-fg); border: 1px solid var(--tsc-line); border-radius: 5px; outline-color: var(--tsc-accent); font: inherit; }
+.tsc-actions { display: flex; gap: 7px; justify-content: flex-end; margin-top: 8px; }
+.tsc-confirm { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; padding-top: 9px; border-top: 1px solid var(--tsc-line); font-size: 11px; }
+.tsc-footer { border-top: 1px solid var(--tsc-line); padding: 10px 15px; font-size: 10px; color: var(--tsc-muted); }
+.tsc-launcher { position: fixed; top: 40px; right: 16px; z-index: 1049; background: var(--tsc-accent); color: white; padding: 6px 13px; font: 12px "Microsoft YaHei", sans-serif; box-shadow: 0 2px 8px #0002; }
+.tsc-open .tsc-launcher { right: calc(var(--tsc-width) + 12px); }
+.tsc-context { position: fixed; z-index: 99999; background: var(--tsc-card); color: var(--tsc-fg); box-shadow: 0 4px 20px #0003; border: 1px solid var(--tsc-line); padding: 10px 13px; font: 12px "Microsoft YaHei", sans-serif; }
+::highlight(tsc-comments) { background-color: #ebc87865; }
+::highlight(tsc-focus) { background-color: #69ba9d88; text-decoration: underline; }
+@media (max-width: 820px) { :root { --tsc-width: min(350px, 88vw); } body.tsc-open content { right: 0 !important; } .tsc-panel { box-shadow: -8px 0 30px #0002; } }
+@media (prefers-color-scheme: dark) { :root { --tsc-bg: #202727; --tsc-card: #283131; --tsc-fg: #e1e8e5; --tsc-muted: #a1aeaa; --tsc-line: #3a4643; --tsc-accent: #3a846e; --tsc-soft: #304c42; --tsc-danger: #eeaaa0; } .tsc-panel .tsc-quote { background: #403d31; color: #e0ce9f; } .tsc-notice.tsc-error { background: #463b29; color: #f0ca8b; } .tsc-detached { color: #e6c587; } }
+@media print { .tsc-panel, .tsc-launcher, .tsc-context { display: none !important; } body.tsc-open content { right: 0 !important; } ::highlight(tsc-comments), ::highlight(tsc-focus) { background-color: transparent; text-decoration: none; } }
