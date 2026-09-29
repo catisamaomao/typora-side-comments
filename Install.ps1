@@ -32,7 +32,7 @@ $block = "$markerStart`r`n<script defer src=`"./typora-side-comments/boot.js`"><
 $updated = if ($hasStart) { [regex]::Replace($original, '(?s)<!-- typora-side-comments:start -->.*?<!-- typora-side-comments:end -->', $block) } else { $original.Replace('</body>', "$block`r`n</body>") }
 if ($updated -eq $original -and !$hasStart) { throw 'Could not locate the insertion point.' }
 Write-Output "Typora: $appRoot"
-Write-Output 'Changes: install five plugin files; add one script block; back up window.html.'
+Write-Output 'Changes: install six plugin files; add one script block; back up window.html.'
 Write-Output 'Document files, licenses, user settings, and folder permissions are not modified.'
 if (!$PSCmdlet.ShouldProcess($appRoot, 'Install Typora Side Comments')) { return }
 if (Get-Process -Name Typora -ErrorAction SilentlyContinue) { throw 'Please save your documents and close all Typora windows, then run the installer again.' }
@@ -45,15 +45,15 @@ $hadPlugin = Test-Path -LiteralPath $pluginTarget
 if ($hadPlugin) { Copy-Item -LiteralPath $pluginTarget -Destination $oldPluginBackup -Recurse }
 try {
     New-Item -ItemType Directory -Path $pluginTarget -Force | Out-Null
-    [IO.File]::WriteAllText((Join-Path $pluginTarget '.typora-side-comments-owned'), '1.0.0', $utf8)
-    foreach ($name in @('boot.js','core.js','storage.cjs','ui.js','style.css')) { Copy-Item -LiteralPath (Join-Path $pluginSource $name) -Destination (Join-Path $pluginTarget $name) -Force }
+    [IO.File]::WriteAllText((Join-Path $pluginTarget '.typora-side-comments-owned'), '1.1.0', $utf8)
+    foreach ($name in @('boot.js','i18n.js','core.js','storage.cjs','ui.js','style.css')) { Copy-Item -LiteralPath (Join-Path $pluginSource $name) -Destination (Join-Path $pluginTarget $name) -Force }
     [IO.File]::WriteAllText($windowTemporary, $updated, $utf8)
     [IO.File]::Replace($windowTemporary, $windowFile, $windowBackup)
-    foreach ($name in @('boot.js','core.js','storage.cjs','ui.js','style.css')) {
+    foreach ($name in @('boot.js','i18n.js','core.js','storage.cjs','ui.js','style.css')) {
         if ((Get-FileHash -LiteralPath (Join-Path $pluginSource $name)).Hash -ne (Get-FileHash -LiteralPath (Join-Path $pluginTarget $name)).Hash) { throw "Installed file verification failed: $name" }
     }
     Write-Output "Installed. Backup: $windowBackup"
-    Write-Output 'Open Typora, select text, and press Ctrl+Alt+M.'
+    Write-Output 'Open Typora, choose a sidebar language, select text, and click Add comment.'
 } catch {
     $installError = $_
     Copy-Item -LiteralPath $windowBackup -Destination $windowFile -Force
