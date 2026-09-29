@@ -24,7 +24,7 @@ test('original duplicate full contexts never become a false unique target', () =
   const p = 'a'.repeat(64) + 'Q' + 'b'.repeat(64); const s = p + '\n\n' + p; const a = anchor(s, 'Q');
   assert.equal(a.contextUnique, false); assert.equal(locate(a, s.replace('Q', 'R')).status, 'ambiguous');
 });
-test('changed adjacent context asks for reassociation', () => { const s = '前文目标后文'; assert.equal(locate(anchor(s, '目标'), '前言目标后文').status, 'detached'); });
+test('changed adjacent context keeps an unchanged unique quote attached', () => { const s = '前文目标后文'; assert.equal(locate(anchor(s, '目标'), '前言目标后文').status, 'attached'); });
 test('deleted target stays detached; undo restores it', () => { const s = '前文目标后文'; const a = anchor(s, '目标'); assert.equal(locate(a, '前文后文').status, 'detached'); assert.equal(locate(a, s).status, 'attached'); });
 test('emoji and rich-text projection use UTF-16 offsets consistently', () => { const s = '前😊批注🚀后'; const a = anchor(s, '批注🚀'); assert.equal(s.slice(locate(a, s).start, locate(a, s).end), '批注🚀'); });
 test('empty and oversized ranges are rejected', () => { assert.throws(() => anchor('   ', ' ')); assert.throws(() => anchor('x'.repeat(4001), 'x'.repeat(4001))); });
